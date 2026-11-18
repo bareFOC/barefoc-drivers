@@ -1,0 +1,28 @@
+[package]
+name = "mt6xxx-rs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "High-performance #![no_std] MagnTek MT6xxx magnetic angle encoder driver (MT6701 SSI) with RX-only SPI, CRC-6 verification, bounded retry, and BareFOC sensor integration."
+
+[dependencies]
+embedded-hal = { workspace = true }
+embedded-hal-async = { workspace = true, optional = true }
+libm = { workspace = true }
+defmt = { workspace = true, optional = true }
+barefoc = { path = "../../barefoc", default-features = false, optional = true }
+
+[dev-dependencies]
+embedded-hal-mock = "0.10"
+
+[features]
+default = ["barefoc"]
+std = ["barefoc?/std"]
+async = ["dep:embedded-hal-async"]
+defmt = ["dep:defmt", "barefoc?/defmt"]
+barefoc = ["dep:barefoc"]
+
+[lints]
+workspace = true

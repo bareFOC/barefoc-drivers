@@ -1,0 +1,41 @@
+[package]
+name = "barefoc-drivers"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Pure-Rust, no_std port of the Arduino SimpleFOC-drivers library (extended encoders, gate drivers, comms, voltage sense, utilities) for embedded-hal v1.0 targets."
+
+[dependencies]
+barefoc = { path = "../../barefoc", default-features = false }
+libm = { workspace = true }
+embedded-hal = { workspace = true }
+embedded-io = { workspace = true }
+nb = { workspace = true }
+barefoc-commander = { path = "../barefoc-commander", default-features = false, optional = true }
+barefoc-encoders = { path = "../barefoc-encoders", default-features = false, optional = true }
+barefoc-kinematics = { path = "../../barefoc-kinematics", default-features = false, optional = true }
+drv83xx-rs = { path = "../drv83xx-rs", default-features = false, optional = true }
+mt6xxx-rs = { path = "../mt6xxx-rs", default-features = false, optional = true }
+defmt = { workspace = true, optional = true }
+rtic = { workspace = true, optional = true }
+
+[dev-dependencies]
+embedded-hal-mock = "0.10"
+
+[features]
+default = ["std"]
+defmt = ["dep:defmt", "barefoc/defmt"]
+rtic = ["dep:rtic", "barefoc/rtic"]
+std = ["barefoc/std"]
+commander = ["dep:barefoc-commander"]
+drv83xx = ["dep:drv83xx-rs"]
+encoders = ["dep:barefoc-encoders"]
+kinematics = ["dep:barefoc-kinematics", "barefoc-kinematics?/std"]
+mt6xxx = ["dep:mt6xxx-rs"]
+# Per-encoder / per-driver feature flags are added as each module is ported.
+# See `PORTING_STATUS.md` Extended Drivers table.
+
+[lints]
+workspace = true

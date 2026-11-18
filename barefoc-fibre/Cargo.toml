@@ -1,0 +1,26 @@
+[package]
+name = "barefoc-fibre"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Pure-Rust, no_std Fibre RPC protocol implementation compatible with ODrive GUI and odrivetool."
+
+[dependencies]
+barefoc = { path = "../../barefoc", default-features = false, optional = true }
+embedded-io = { workspace = true, optional = true }
+defmt = { workspace = true, optional = true }
+
+[dev-dependencies]
+barefoc = { path = "../../barefoc", default-features = false }
+
+[features]
+default = ["std", "barefoc", "embedded-io"]
+std = ["barefoc?/std"]
+barefoc = ["dep:barefoc"]
+embedded-io = ["dep:embedded-io"]
+defmt = ["dep:defmt", "barefoc?/defmt"]
+
+[lints]
+workspace = true

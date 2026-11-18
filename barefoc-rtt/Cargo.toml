@@ -1,0 +1,28 @@
+[package]
+name = "barefoc-rtt"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "no_std SEGGER RTT byte-stream transport implementing embedded-io Read/Write for BareFOC protocol lanes."
+
+[dependencies]
+embedded-io = { workspace = true, optional = true }
+rtt-target = { workspace = true, optional = true }
+defmt = { workspace = true, optional = true }
+
+[dev-dependencies]
+barefoc-commander = { path = "../barefoc-commander", default-features = false, features = ["embedded-io"] }
+barefoc = { path = "../../barefoc", default-features = false }
+embedded-io = { workspace = true }
+
+[features]
+default = ["rtt-target", "embedded-io"]
+std = []
+embedded-io = ["dep:embedded-io"]
+rtt-target = ["dep:rtt-target", "embedded-io"]
+defmt = ["dep:defmt"]
+
+[lints]
+workspace = true

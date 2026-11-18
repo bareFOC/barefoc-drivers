@@ -1,0 +1,30 @@
+[package]
+name = "barefoc-encoders"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Pure-Rust, no_std drivers for AS5047P, AS5048A, AS5600, MT6701 SSI, and Generic SSI encoders with BareFOC Sensor trait integration."
+
+[dependencies]
+barefoc = { path = "../../barefoc", default-features = false }
+embedded-hal = { workspace = true }
+embedded-hal-async = { workspace = true, optional = true }
+libm = { workspace = true }
+defmt = { workspace = true, optional = true }
+tmag-rs = { path = "../tmag-rs", default-features = false, optional = true }
+mt6xxx-rs = { path = "../mt6xxx-rs", default-features = false, features = ["barefoc"] }
+
+[dev-dependencies]
+embedded-hal-mock = "0.10"
+
+[features]
+default = ["std"]
+std = ["barefoc/std", "mt6xxx-rs/std"]
+async = ["dep:embedded-hal-async", "mt6xxx-rs/async"]
+defmt = ["dep:defmt", "barefoc/defmt", "mt6xxx-rs/defmt"]
+tmag = ["dep:tmag-rs", "tmag-rs/barefoc"]
+
+[lints]
+workspace = true
