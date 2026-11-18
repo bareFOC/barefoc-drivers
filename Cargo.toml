@@ -6,11 +6,6 @@ members = [
     "mt6xxx-rs",
     "tmag-rs",
     "barefoc-encoders",
-    "barefoc-fibre",
-    "barefoc-commander",
-    "barefoc-multibus",
-    "barefoc-rtt",
-    "barefoc-boot",
 ]
 
 [workspace.package]

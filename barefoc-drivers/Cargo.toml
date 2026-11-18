@@ -13,7 +13,7 @@ libm = { workspace = true }
 embedded-hal = { workspace = true }
 embedded-io = { workspace = true }
 nb = { workspace = true }
-barefoc-commander = { path = "../barefoc-commander", default-features = false, optional = true }
+barefoc-commander = { path = "../../barefoc-comms/barefoc-commander", default-features = false, optional = true }
 barefoc-encoders = { path = "../barefoc-encoders", default-features = false, optional = true }
 drv83xx-rs = { path = "../drv83xx-rs", default-features = false, optional = true }
 mt6xxx-rs = { path = "../mt6xxx-rs", default-features = false, optional = true }
