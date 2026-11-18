@@ -297,7 +297,7 @@ fn test_barefoc_sensor_1d() {
 #[test]
 fn test_barefoc_sensor_2d() {
     use ::barefoc::common::time::Clock;
-    use barefoc_kinematics::sensor::Sensor2D;
+    use ::barefoc::kinematics::sensor::Sensor2D;
 
     struct TestClock(u32);
     impl Clock for TestClock {

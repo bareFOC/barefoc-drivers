@@ -15,7 +15,6 @@ embedded-io = { workspace = true }
 nb = { workspace = true }
 barefoc-commander = { path = "../barefoc-commander", default-features = false, optional = true }
 barefoc-encoders = { path = "../barefoc-encoders", default-features = false, optional = true }
-barefoc-kinematics = { path = "../../barefoc-kinematics", default-features = false, optional = true }
 drv83xx-rs = { path = "../drv83xx-rs", default-features = false, optional = true }
 mt6xxx-rs = { path = "../mt6xxx-rs", default-features = false, optional = true }
 defmt = { workspace = true, optional = true }
@@ -32,7 +31,7 @@ std = ["barefoc/std"]
 commander = ["dep:barefoc-commander"]
 drv83xx = ["dep:drv83xx-rs"]
 encoders = ["dep:barefoc-encoders"]
-kinematics = ["dep:barefoc-kinematics", "barefoc-kinematics?/std"]
+kinematics = ["barefoc/kinematics"]
 mt6xxx = ["dep:mt6xxx-rs"]
 # Per-encoder / per-driver feature flags are added as each module is ported.
 # See `PORTING_STATUS.md` Extended Drivers table.

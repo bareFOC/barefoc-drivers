@@ -1,10 +1,10 @@
 //! # barefoc::sensor_2d — 2-DOF Joint Sensor Adapter for BareFOC Kinematics
 //!
-//! Wraps [`Tmag5273`] to implement [`barefoc_kinematics::sensor::Sensor2D`] using synchronous
+//! Wraps [`Tmag5273`] to implement [`barefoc::kinematics::sensor::Sensor2D`] using synchronous
 //! 6-byte 3D magnetic burst reads and instantaneous $\mathcal{O}(1)$ plane angle derivation.
 
 use barefoc::common::time::Clock;
-use barefoc_kinematics::sensor::Sensor2D;
+use barefoc::kinematics::sensor::Sensor2D;
 use embedded_hal::i2c::I2c;
 
 use crate::tmag5273::Tmag5273;

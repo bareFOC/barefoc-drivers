@@ -1,19 +1,17 @@
 //! # Kinematics register bridge (feature `kinematics`)
 //!
 //! Implements [`RegisterBridge`] for
-//! [`barefoc_kinematics::actuator::Actuator1DOF`] and
-//! [`barefoc_kinematics::transmission::LinearGear`].
+//! [`barefoc::kinematics::actuator::Actuator1DOF`] and
+//! [`barefoc::kinematics::transmission::LinearGear`].
 
 #[cfg(feature = "kinematics")]
 use barefoc::common::time::Clock;
 #[cfg(feature = "kinematics")]
-use barefoc::motor::base::FOCMotor;
-#[cfg(feature = "kinematics")]
 use crate::comms::{RegisterBridge, RegisterError, RegisterId, RegisterValue};
 #[cfg(feature = "kinematics")]
-use barefoc_kinematics::actuator::Actuator1DOF;
+use barefoc::kinematics::actuator::Actuator1DOF;
 #[cfg(feature = "kinematics")]
-use barefoc_kinematics::transmission::LinearGear;
+use barefoc::kinematics::transmission::LinearGear;
 
 #[cfg(feature = "kinematics")]
 impl<M, T, SOut, C> RegisterBridge for Actuator1DOF<M, T, SOut, C>

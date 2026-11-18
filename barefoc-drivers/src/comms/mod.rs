@@ -11,8 +11,6 @@ pub mod registers;
 pub mod kinematics_bridge;
 
 pub use bridge::{read_register, write_register, RegisterBridge};
-#[cfg(feature = "kinematics")]
-pub use kinematics_bridge::*;
 pub use registers::{
     AccessMode, RegisterError, RegisterId, RegisterValue, SIMPLEFOC_REGISTERS_VERSION,
 };

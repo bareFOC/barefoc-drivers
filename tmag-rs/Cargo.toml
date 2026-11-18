@@ -13,7 +13,6 @@ embedded-hal-async = { workspace = true, optional = true }
 libm = { workspace = true }
 defmt = { workspace = true, optional = true }
 barefoc = { path = "../../barefoc", default-features = false, optional = true }
-barefoc-kinematics = { path = "../../barefoc-kinematics", default-features = false, optional = true }
 
 [dev-dependencies]
 embedded-hal-mock = "0.10"
@@ -23,7 +22,7 @@ default = ["std"]
 std = ["barefoc?/std"]
 async = ["dep:embedded-hal-async"]
 defmt = ["dep:defmt", "barefoc?/defmt"]
-barefoc = ["dep:barefoc", "dep:barefoc-kinematics"]
+barefoc = ["dep:barefoc", "barefoc/kinematics"]
 
 [lints]
 workspace = true

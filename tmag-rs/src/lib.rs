@@ -20,7 +20,7 @@
 //!   - [`MagneticField3D`] with instantaneous $\mathcal{O}(1)$ `.plane_angles()` yielding $[\alpha, \beta]$ in ~60 ns.
 //! - **BareFOC 1-Line Adapters (`feature = "barefoc"`)**:
 //!   - [`Tmag5273Sensor`]: Implements [`barefoc::traits::sensor::Sensor`].
-//!   - [`Tmag5273Sensor2D`]: Implements [`barefoc_kinematics::sensor::Sensor2D`].
+//!   - [`Tmag5273Sensor2D`]: Implements [`barefoc::kinematics::sensor::Sensor2D`].
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
