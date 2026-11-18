@@ -15,7 +15,7 @@ use core::cell::RefCell;
 use embedded_hal::spi::SpiDevice;
 
 use super::as5047p::{build_command, verify_even_parity};
-use crate::EncoderError;
+use crate::encoders::EncoderError;
 
 /// Counts per revolution for the 14-bit AS5048A sensor ($2^{14} = 16384$).
 pub const AS5048A_CPR: f32 = 16384.0;
@@ -195,7 +195,7 @@ mod tests {
     use std::vec;
 
     use super::*;
-    use crate::test_utils::MockClock;
+    use crate::encoders::test_utils::MockClock;
     use embedded_hal_mock::eh1::spi::{Mock as SpiMock, Transaction as SpiTransaction};
 
     #[test]

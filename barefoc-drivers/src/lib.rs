@@ -21,18 +21,16 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![no_std]
 
+#[cfg(feature = "std")]
+extern crate std;
+
 // ---------------------------------------------------------------------------
 // Module placeholders. The crate layout is fixed by §2 of PORTING_GUIDELINES.md;
 // each driver is ported in its own commit and is intentionally empty here.
 // ---------------------------------------------------------------------------
 
-pub mod encoders {
-    #[cfg(feature = "encoders")]
-    pub use barefoc_encoders::*;
-
-    #[cfg(feature = "mt6xxx")]
-    pub use mt6xxx_rs as mt6xxx;
-}
+#[cfg(feature = "encoders")]
+pub mod encoders;
 
 pub mod drivers {
     // Per gate-driver modules (STSPIN, TMC, DRV, L6234, …) —

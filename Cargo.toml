@@ -5,7 +5,6 @@ members = [
     "drv83xx-rs",
     "mt6xxx-rs",
     "tmag-rs",
-    "barefoc-encoders",
 ]
 
 [workspace.package]

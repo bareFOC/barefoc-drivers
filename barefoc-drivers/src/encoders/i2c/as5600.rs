@@ -14,7 +14,7 @@ use barefoc::traits::sensor::{Sensor, SensorBase};
 use core::cell::RefCell;
 use embedded_hal::i2c::I2c;
 
-use crate::EncoderError;
+use crate::encoders::EncoderError;
 
 /// Standard 7-bit I²C address for the AS5600 sensor (`0x36`).
 pub const AS5600_DEFAULT_I2C_ADDR: u8 = 0x36;
@@ -214,7 +214,7 @@ mod tests {
     use std::vec;
 
     use super::*;
-    use crate::test_utils::MockClock;
+    use crate::encoders::test_utils::MockClock;
     use embedded_hal_mock::eh1::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
 
     #[test]

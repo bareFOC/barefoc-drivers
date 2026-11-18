@@ -23,11 +23,6 @@
 //! - [`MagneticSensorAS5600`](https://github.com/simplefoc/Arduino-FOC-drivers/tree/master/src/encoders/as5600)
 //! - [`MagneticSensorMT6701SSI`](https://github.com/simplefoc/Arduino-FOC-drivers/tree/master/src/encoders/mt6701)
 
-#![no_std]
-
-#[cfg(feature = "std")]
-extern crate std;
-
 pub mod i2c;
 pub mod spi;
 pub mod ssi;
@@ -37,7 +32,9 @@ pub use spi::as5047p::{As5047p, As5047pDiagnostics, As5047pErrorFlags};
 pub use spi::as5048a::{As5048a, As5048aDiagnostics, As5048aErrorFlags};
 pub use ssi::generic_ssi::GenericSsi;
 pub use ssi::mt6701::{Mt6701Ssi, Mt6701Status};
+#[cfg(feature = "mt6xxx")]
 pub use mt6xxx_rs as mt6xxx;
+#[cfg(feature = "mt6xxx")]
 pub use mt6xxx_rs::{Mt6701, Mt6701Frame, Mt6701Telemetry, SpiMode};
 
 #[cfg(feature = "tmag")]
@@ -75,6 +72,7 @@ impl<CommErr> From<CommErr> for EncoderError<CommErr> {
     }
 }
 
+#[cfg(feature = "mt6xxx")]
 impl<CommErr> From<mt6xxx_rs::Error<CommErr>> for EncoderError<CommErr> {
     fn from(err: mt6xxx_rs::Error<CommErr>) -> Self {
         match err {

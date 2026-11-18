@@ -25,7 +25,7 @@ mod tests {
     use std::vec::Vec;
 
     use super::*;
-    use crate::test_utils::MockClock;
+    use crate::encoders::test_utils::MockClock;
     use barefoc::traits::sensor::Sensor;
     use embedded_hal_mock::eh1::spi::{Mock as SpiMock, Transaction as SpiTransaction};
 

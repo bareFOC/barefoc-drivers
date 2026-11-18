@@ -12,7 +12,7 @@ use barefoc::traits::sensor::{Sensor, SensorBase};
 use core::cell::RefCell;
 use embedded_hal::spi::SpiDevice;
 
-use crate::EncoderError;
+use crate::encoders::EncoderError;
 
 /// Converts standard reflected binary Gray code to standard binary integer.
 #[inline]
@@ -146,7 +146,7 @@ mod tests {
     use std::vec;
 
     use super::*;
-    use crate::test_utils::MockClock;
+    use crate::encoders::test_utils::MockClock;
     use embedded_hal_mock::eh1::spi::{Mock as SpiMock, Transaction as SpiTransaction};
 
     #[test]

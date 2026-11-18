@@ -14,9 +14,9 @@ embedded-hal = { workspace = true }
 embedded-io = { workspace = true }
 nb = { workspace = true }
 barefoc-commander = { path = "../../barefoc-comms/barefoc-commander", default-features = false, optional = true }
-barefoc-encoders = { path = "../barefoc-encoders", default-features = false, optional = true }
 drv83xx-rs = { path = "../drv83xx-rs", default-features = false, optional = true }
-mt6xxx-rs = { path = "../mt6xxx-rs", default-features = false, optional = true }
+mt6xxx-rs = { path = "../mt6xxx-rs", default-features = false, optional = true, features = ["barefoc"] }
+tmag-rs = { path = "../tmag-rs", default-features = false, optional = true }
 defmt = { workspace = true, optional = true }
 rtic = { workspace = true, optional = true }
 
@@ -24,15 +24,16 @@ rtic = { workspace = true, optional = true }
 embedded-hal-mock = "0.10"
 
 [features]
-default = ["std"]
-defmt = ["dep:defmt", "barefoc/defmt"]
+default = ["std", "encoders"]
+defmt = ["dep:defmt", "barefoc/defmt", "mt6xxx-rs?/defmt"]
 rtic = ["dep:rtic", "barefoc/rtic"]
-std = ["barefoc/std"]
+std = ["barefoc/std", "mt6xxx-rs?/std", "tmag-rs?/std"]
 commander = ["dep:barefoc-commander"]
 drv83xx = ["dep:drv83xx-rs"]
-encoders = ["dep:barefoc-encoders"]
+encoders = ["dep:mt6xxx-rs"]
 kinematics = ["barefoc/kinematics"]
 mt6xxx = ["dep:mt6xxx-rs"]
+tmag = ["dep:tmag-rs"]
 # Per-encoder / per-driver feature flags are added as each module is ported.
 # See `PORTING_STATUS.md` Extended Drivers table.
 
