@@ -44,6 +44,7 @@ pub enum RegisterError {
 }
 
 /// SimpleFOC universal register identifiers matching upstream 1:1 (`0x00`..`0x7F`).
+#[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum RegisterId {
@@ -197,36 +198,100 @@ pub enum RegisterId {
     CurBOffset = 0x6B,
     /// Phase C current sense offset - R/W (float, 4 bytes).
     CurCOffset = 0x6C,
+    /// Selected motor index in multi-motor actuator - R/W (1 byte).
+    MotorSelect = 0x70,
     /// Number of motors attached - RO (1 byte).
-    NumMotors = 0x70,
+    NumMotors = 0x71,
     /// System uptime / timestamp (milliseconds) - RO (u32, 4 bytes).
-    SysTime = 0x71,
+    SysTime = 0x72,
     /// Motor communication address - R/W (1 byte).
     MotorAddress = 0x7F,
+    /// Kinematics: transmission type discriminator - R/W (1 byte).
+    TransmissionType = 0x80,
     /// Kinematics: gear ratio - R/W (float, 4 bytes).
-    GearRatio = 0x80,
+    GearRatio = 0x81,
     /// Kinematics: backlash delta - R/W (float, 4 bytes).
-    BacklashDelta = 0x81,
+    BacklashDelta = 0x82,
     /// Kinematics: omega threshold - R/W (float, 4 bytes).
-    OmegaThresh = 0x82,
+    OmegaThresh = 0x83,
     /// Kinematics: torsional stiffness - R/W (float, 4 bytes).
-    TorsionalStiffness = 0x83,
-    /// Kinematics: zero offset (joint) - R/W (float, 4 bytes).
-    ZeroOffsetJoint = 0x84,
-    /// Kinematics: outer PID P - R/W (float, 4 bytes).
-    OuterPidP = 0x85,
-    /// Kinematics: outer PID I - R/W (float, 4 bytes).
-    OuterPidI = 0x86,
-    /// Kinematics: outer PID D - R/W (float, 4 bytes).
-    OuterPidD = 0x87,
-    /// Kinematics: outer PID limit - R/W (float, 4 bytes).
-    OuterPidLim = 0x88,
-    /// Kinematics: outer PID ramp - R/W (float, 4 bytes).
-    OuterPidRamp = 0x89,
-    /// Kinematics: calibration state - R/O (1 byte).
-    CalibState = 0x8A,
-    /// Kinematics: calibration progress - R/O (1 byte).
-    CalibProgress = 0x8B,
+    TorsionalStiffness = 0x84,
+    /// Kinematics: joint zero offset for axis Alpha - R/W (float, 4 bytes).
+    JointOffsetAlpha = 0x85,
+    /// Kinematics: joint zero offset for axis Beta - R/W (float, 4 bytes).
+    JointOffsetBeta = 0x86,
+    /// Kinematics: target joint angle for axis Alpha - R/W (float, 4 bytes).
+    JointTargetAlpha = 0x87,
+    /// Kinematics: target joint angle for axis Beta - R/W (float, 4 bytes).
+    JointTargetBeta = 0x88,
+    /// Kinematics: measured joint angle for axis Alpha - RO (float, 4 bytes).
+    JointAngleAlpha = 0x89,
+    /// Kinematics: measured joint angle for axis Beta - RO (float, 4 bytes).
+    JointAngleBeta = 0x8A,
+    /// Kinematics: measured joint velocity for axis Alpha - RO (float, 4 bytes).
+    JointVelocityAlpha = 0x8B,
+    /// Kinematics: measured joint velocity for axis Beta - RO (float, 4 bytes).
+    JointVelocityBeta = 0x8C,
+    /// Kinematics: outer position loop downsample ratio - R/W (1 byte).
+    OuterDownsample = 0x8D,
+    /// Kinematics: calibration state - RO (1 byte).
+    CalibState = 0x8E,
+    /// Kinematics: calibration progress - RO (1 byte).
+    CalibProgress = 0x8F,
+    /// Kinematics: outer PID proportional gain for axis Alpha - R/W (float, 4 bytes).
+    OuterPidAlpha_P = 0x90,
+    /// Kinematics: outer PID integral gain for axis Alpha - R/W (float, 4 bytes).
+    OuterPidAlpha_I = 0x91,
+    /// Kinematics: outer PID derivative gain for axis Alpha - R/W (float, 4 bytes).
+    OuterPidAlpha_D = 0x92,
+    /// Kinematics: outer PID output limit for axis Alpha - R/W (float, 4 bytes).
+    OuterPidAlpha_Lim = 0x93,
+    /// Kinematics: outer PID output ramp limit for axis Alpha - R/W (float, 4 bytes).
+    OuterPidAlpha_Ramp = 0x94,
+    /// Kinematics: outer PID proportional gain for axis Beta - R/W (float, 4 bytes).
+    OuterPidBeta_P = 0x95,
+    /// Kinematics: outer PID integral gain for axis Beta - R/W (float, 4 bytes).
+    OuterPidBeta_I = 0x96,
+    /// Kinematics: outer PID derivative gain for axis Beta - R/W (float, 4 bytes).
+    OuterPidBeta_D = 0x97,
+    /// Kinematics: outer PID output limit for axis Beta - R/W (float, 4 bytes).
+    OuterPidBeta_Lim = 0x98,
+    /// Kinematics: outer PID output ramp limit for axis Beta - R/W (float, 4 bytes).
+    OuterPidBeta_Ramp = 0x99,
+    /// Kinematics: coupled differential matrix element T11 - R/W (float, 4 bytes).
+    DiffMatrix_T11 = 0x9A,
+    /// Kinematics: coupled differential matrix element T12 - R/W (float, 4 bytes).
+    DiffMatrix_T12 = 0x9B,
+    /// Kinematics: coupled differential matrix element T21 - R/W (float, 4 bytes).
+    DiffMatrix_T21 = 0x9C,
+    /// Kinematics: coupled differential matrix element T22 - R/W (float, 4 bytes).
+    DiffMatrix_T22 = 0x9D,
+    /// Kinematics: analytical linkage ground frame length L1 - R/W (float, 4 bytes).
+    LinkageL1 = 0x9E,
+    /// Kinematics: analytical linkage lengths [L2, L3, L4] - R/W (12 bytes).
+    LinkageL2_L4 = 0x9F,
+    /// Kinematics: LUT minimum motor angle - R/W (float, 4 bytes).
+    LutMotMin = 0xA0,
+    /// Kinematics: LUT maximum motor angle - R/W (float, 4 bytes).
+    LutMotMax = 0xA1,
+    /// Kinematics: LUT capacity / number of points - RO (u16, 2 bytes).
+    LutPoints = 0xA2,
+    /// Kinematics: LUT sample point index pointer - R/W (u16, 2 bytes).
+    LutPointIndex = 0xA3,
+    /// Kinematics: LUT sample point value at current index - R/W (float, 4 bytes).
+    LutPointValue = 0xA4,
+    /// Kinematics: LUT monotonicity status - RO (1 byte).
+    LutStatus = 0xA5,
+    /// Kinematics: calibration trigger command - R/W (1 byte).
+    CalibCommand = 0xB0,
+    /// Kinematics: calibration hard-stop search torque/current limit - R/W (float, 4 bytes).
+    CalibProbeLimit = 0xB1,
+    /// Kinematics: calibration sweep velocity - R/W (float, 4 bytes).
+    CalibSweepVel = 0xB2,
+    /// Kinematics: calibration stall detection threshold - R/W (float, 4 bytes).
+    CalibStallThresh = 0xB3,
+    /// Kinematics: flash storage status - RO (1 byte).
+    FlashStatus = 0xB4,
 }
 
 impl TryFrom<u8> for RegisterId {
@@ -309,21 +374,53 @@ impl TryFrom<u8> for RegisterId {
             0x6A => Ok(RegisterId::CurAOffset),
             0x6B => Ok(RegisterId::CurBOffset),
             0x6C => Ok(RegisterId::CurCOffset),
-            0x70 => Ok(RegisterId::NumMotors),
-            0x71 => Ok(RegisterId::SysTime),
+            0x70 => Ok(RegisterId::MotorSelect),
+            0x71 => Ok(RegisterId::NumMotors),
+            0x72 => Ok(RegisterId::SysTime),
             0x7F => Ok(RegisterId::MotorAddress),
-            0x80 => Ok(RegisterId::GearRatio),
-            0x81 => Ok(RegisterId::BacklashDelta),
-            0x82 => Ok(RegisterId::OmegaThresh),
-            0x83 => Ok(RegisterId::TorsionalStiffness),
-            0x84 => Ok(RegisterId::ZeroOffsetJoint),
-            0x85 => Ok(RegisterId::OuterPidP),
-            0x86 => Ok(RegisterId::OuterPidI),
-            0x87 => Ok(RegisterId::OuterPidD),
-            0x88 => Ok(RegisterId::OuterPidLim),
-            0x89 => Ok(RegisterId::OuterPidRamp),
-            0x8A => Ok(RegisterId::CalibState),
-            0x8B => Ok(RegisterId::CalibProgress),
+            0x80 => Ok(RegisterId::TransmissionType),
+            0x81 => Ok(RegisterId::GearRatio),
+            0x82 => Ok(RegisterId::BacklashDelta),
+            0x83 => Ok(RegisterId::OmegaThresh),
+            0x84 => Ok(RegisterId::TorsionalStiffness),
+            0x85 => Ok(RegisterId::JointOffsetAlpha),
+            0x86 => Ok(RegisterId::JointOffsetBeta),
+            0x87 => Ok(RegisterId::JointTargetAlpha),
+            0x88 => Ok(RegisterId::JointTargetBeta),
+            0x89 => Ok(RegisterId::JointAngleAlpha),
+            0x8A => Ok(RegisterId::JointAngleBeta),
+            0x8B => Ok(RegisterId::JointVelocityAlpha),
+            0x8C => Ok(RegisterId::JointVelocityBeta),
+            0x8D => Ok(RegisterId::OuterDownsample),
+            0x8E => Ok(RegisterId::CalibState),
+            0x8F => Ok(RegisterId::CalibProgress),
+            0x90 => Ok(RegisterId::OuterPidAlpha_P),
+            0x91 => Ok(RegisterId::OuterPidAlpha_I),
+            0x92 => Ok(RegisterId::OuterPidAlpha_D),
+            0x93 => Ok(RegisterId::OuterPidAlpha_Lim),
+            0x94 => Ok(RegisterId::OuterPidAlpha_Ramp),
+            0x95 => Ok(RegisterId::OuterPidBeta_P),
+            0x96 => Ok(RegisterId::OuterPidBeta_I),
+            0x97 => Ok(RegisterId::OuterPidBeta_D),
+            0x98 => Ok(RegisterId::OuterPidBeta_Lim),
+            0x99 => Ok(RegisterId::OuterPidBeta_Ramp),
+            0x9A => Ok(RegisterId::DiffMatrix_T11),
+            0x9B => Ok(RegisterId::DiffMatrix_T12),
+            0x9C => Ok(RegisterId::DiffMatrix_T21),
+            0x9D => Ok(RegisterId::DiffMatrix_T22),
+            0x9E => Ok(RegisterId::LinkageL1),
+            0x9F => Ok(RegisterId::LinkageL2_L4),
+            0xA0 => Ok(RegisterId::LutMotMin),
+            0xA1 => Ok(RegisterId::LutMotMax),
+            0xA2 => Ok(RegisterId::LutPoints),
+            0xA3 => Ok(RegisterId::LutPointIndex),
+            0xA4 => Ok(RegisterId::LutPointValue),
+            0xA5 => Ok(RegisterId::LutStatus),
+            0xB0 => Ok(RegisterId::CalibCommand),
+            0xB1 => Ok(RegisterId::CalibProbeLimit),
+            0xB2 => Ok(RegisterId::CalibSweepVel),
+            0xB3 => Ok(RegisterId::CalibStallThresh),
+            0xB4 => Ok(RegisterId::FlashStatus),
             other => Err(RegisterError::UnknownRegister(other)),
         }
     }
@@ -353,8 +450,15 @@ impl RegisterId {
             | RegisterId::CurrentDC
             | RegisterId::NumMotors
             | RegisterId::SysTime
+            | RegisterId::JointAngleAlpha
+            | RegisterId::JointAngleBeta
+            | RegisterId::JointVelocityAlpha
+            | RegisterId::JointVelocityBeta
             | RegisterId::CalibState
-            | RegisterId::CalibProgress => AccessMode::ReadOnly,
+            | RegisterId::CalibProgress
+            | RegisterId::LutPoints
+            | RegisterId::LutStatus
+            | RegisterId::FlashStatus => AccessMode::ReadOnly,
 
             RegisterId::EnableAll | RegisterId::DriverEnable => AccessMode::WriteOnly,
 
@@ -389,23 +493,31 @@ impl RegisterId {
             | RegisterId::MotionDownsample
             | RegisterId::SensorDirection
             | RegisterId::PolePairs
-            | RegisterId::NumMotors
             | RegisterId::MotorAddress
+            | RegisterId::MotorSelect
+            | RegisterId::NumMotors
+            | RegisterId::TransmissionType
+            | RegisterId::OuterDownsample
             | RegisterId::CalibState
-            | RegisterId::CalibProgress => 1,
+            | RegisterId::CalibProgress
+            | RegisterId::LutStatus
+            | RegisterId::CalibCommand
+            | RegisterId::FlashStatus => 1,
+
+            RegisterId::LutPoints | RegisterId::LutPointIndex => 2,
 
             RegisterId::PhaseState => 3,
 
             RegisterId::Position => 8,
 
-            RegisterId::PhaseVoltage | RegisterId::CurrentABC => 12,
+            RegisterId::PhaseVoltage | RegisterId::CurrentABC | RegisterId::LinkageL2_L4 => 12,
 
             // All remaining scalar registers (floats and u32s) are 4 bytes
             _ => 4,
         }
     }
 
-    pub const ALL: [RegisterId; 90] = [
+    pub const ALL: [RegisterId; 122] = [
         RegisterId::Status,
         RegisterId::Target,
         RegisterId::EnableAll,
@@ -481,21 +593,53 @@ impl RegisterId {
         RegisterId::CurAOffset,
         RegisterId::CurBOffset,
         RegisterId::CurCOffset,
+        RegisterId::MotorSelect,
         RegisterId::NumMotors,
         RegisterId::SysTime,
         RegisterId::MotorAddress,
+        RegisterId::TransmissionType,
         RegisterId::GearRatio,
         RegisterId::BacklashDelta,
         RegisterId::OmegaThresh,
         RegisterId::TorsionalStiffness,
-        RegisterId::ZeroOffsetJoint,
-        RegisterId::OuterPidP,
-        RegisterId::OuterPidI,
-        RegisterId::OuterPidD,
-        RegisterId::OuterPidLim,
-        RegisterId::OuterPidRamp,
+        RegisterId::JointOffsetAlpha,
+        RegisterId::JointOffsetBeta,
+        RegisterId::JointTargetAlpha,
+        RegisterId::JointTargetBeta,
+        RegisterId::JointAngleAlpha,
+        RegisterId::JointAngleBeta,
+        RegisterId::JointVelocityAlpha,
+        RegisterId::JointVelocityBeta,
+        RegisterId::OuterDownsample,
         RegisterId::CalibState,
         RegisterId::CalibProgress,
+        RegisterId::OuterPidAlpha_P,
+        RegisterId::OuterPidAlpha_I,
+        RegisterId::OuterPidAlpha_D,
+        RegisterId::OuterPidAlpha_Lim,
+        RegisterId::OuterPidAlpha_Ramp,
+        RegisterId::OuterPidBeta_P,
+        RegisterId::OuterPidBeta_I,
+        RegisterId::OuterPidBeta_D,
+        RegisterId::OuterPidBeta_Lim,
+        RegisterId::OuterPidBeta_Ramp,
+        RegisterId::DiffMatrix_T11,
+        RegisterId::DiffMatrix_T12,
+        RegisterId::DiffMatrix_T21,
+        RegisterId::DiffMatrix_T22,
+        RegisterId::LinkageL1,
+        RegisterId::LinkageL2_L4,
+        RegisterId::LutMotMin,
+        RegisterId::LutMotMax,
+        RegisterId::LutPoints,
+        RegisterId::LutPointIndex,
+        RegisterId::LutPointValue,
+        RegisterId::LutStatus,
+        RegisterId::CalibCommand,
+        RegisterId::CalibProbeLimit,
+        RegisterId::CalibSweepVel,
+        RegisterId::CalibStallThresh,
+        RegisterId::FlashStatus,
     ];
 }
 
@@ -504,6 +648,8 @@ impl RegisterId {
 pub enum RegisterValue {
     /// Single unsigned 8-bit byte.
     U8(u8),
+    /// 16-bit unsigned integer (little-endian).
+    U16(u16),
     /// 32-bit unsigned integer (little-endian).
     U32(u32),
     /// 32-bit signed integer (little-endian).
@@ -528,6 +674,7 @@ impl RegisterValue {
     pub const fn size(&self) -> usize {
         match self {
             RegisterValue::U8(_) => 1,
+            RegisterValue::U16(_) => 2,
             RegisterValue::PhaseState(_) => 3,
             RegisterValue::U32(_) | RegisterValue::I32(_) | RegisterValue::Float(_) => 4,
             RegisterValue::Position { .. } => 8,
@@ -551,6 +698,9 @@ impl RegisterValue {
         match self {
             RegisterValue::U8(val) => {
                 buf[0] = *val;
+            }
+            RegisterValue::U16(val) => {
+                buf[..2].copy_from_slice(&val.to_le_bytes());
             }
             RegisterValue::U32(val) => {
                 buf[..4].copy_from_slice(&val.to_le_bytes());
@@ -604,8 +754,21 @@ impl RegisterValue {
             | RegisterId::MotionDownsample
             | RegisterId::SensorDirection
             | RegisterId::PolePairs
+            | RegisterId::MotorAddress
+            | RegisterId::MotorSelect
             | RegisterId::NumMotors
-            | RegisterId::MotorAddress => Ok(RegisterValue::U8(buf[0])),
+            | RegisterId::TransmissionType
+            | RegisterId::OuterDownsample
+            | RegisterId::CalibState
+            | RegisterId::CalibProgress
+            | RegisterId::LutStatus
+            | RegisterId::CalibCommand
+            | RegisterId::FlashStatus => Ok(RegisterValue::U8(buf[0])),
+
+            RegisterId::LutPoints | RegisterId::LutPointIndex => {
+                let val = u16::from_le_bytes(buf[0..2].try_into().unwrap());
+                Ok(RegisterValue::U16(val))
+            }
 
             RegisterId::PhaseState => {
                 let s0 = PhaseState::try_from(buf[0]).map_err(|_| RegisterError::InvalidPayload)?;
@@ -620,7 +783,7 @@ impl RegisterValue {
                 Ok(RegisterValue::Position { rotations, angle })
             }
 
-            RegisterId::PhaseVoltage | RegisterId::CurrentABC => {
+            RegisterId::PhaseVoltage | RegisterId::CurrentABC | RegisterId::LinkageL2_L4 => {
                 let v0 = f32::from_le_bytes(buf[0..4].try_into().unwrap());
                 let v1 = f32::from_le_bytes(buf[4..8].try_into().unwrap());
                 let v2 = f32::from_le_bytes(buf[8..12].try_into().unwrap());
@@ -660,8 +823,28 @@ mod tests {
         assert_eq!(RegisterId::try_from(0x10), Ok(RegisterId::Position));
         assert_eq!(RegisterId::try_from(0x30), Ok(RegisterId::VelPidP));
         assert_eq!(RegisterId::try_from(0x50), Ok(RegisterId::VoltageLimit));
-        assert_eq!(RegisterId::try_from(0x70), Ok(RegisterId::NumMotors));
+        assert_eq!(RegisterId::try_from(0x70), Ok(RegisterId::MotorSelect));
+        assert_eq!(RegisterId::try_from(0x71), Ok(RegisterId::NumMotors));
+        assert_eq!(RegisterId::try_from(0x72), Ok(RegisterId::SysTime));
         assert_eq!(RegisterId::try_from(0x7F), Ok(RegisterId::MotorAddress));
+        assert_eq!(RegisterId::try_from(0x80), Ok(RegisterId::TransmissionType));
+        assert_eq!(RegisterId::try_from(0x81), Ok(RegisterId::GearRatio));
+        assert_eq!(RegisterId::try_from(0x87), Ok(RegisterId::JointTargetAlpha));
+        assert_eq!(RegisterId::try_from(0x88), Ok(RegisterId::JointTargetBeta));
+        assert_eq!(RegisterId::try_from(0x89), Ok(RegisterId::JointAngleAlpha));
+        assert_eq!(RegisterId::try_from(0x8A), Ok(RegisterId::JointAngleBeta));
+        assert_eq!(RegisterId::try_from(0x90), Ok(RegisterId::OuterPidAlpha_P));
+        assert_eq!(RegisterId::try_from(0x95), Ok(RegisterId::OuterPidBeta_P));
+        assert_eq!(RegisterId::try_from(0x9A), Ok(RegisterId::DiffMatrix_T11));
+        assert_eq!(RegisterId::try_from(0x9E), Ok(RegisterId::LinkageL1));
+        assert_eq!(RegisterId::try_from(0x9F), Ok(RegisterId::LinkageL2_L4));
+        assert_eq!(RegisterId::try_from(0xA0), Ok(RegisterId::LutMotMin));
+        assert_eq!(RegisterId::try_from(0xA2), Ok(RegisterId::LutPoints));
+        assert_eq!(RegisterId::try_from(0xA3), Ok(RegisterId::LutPointIndex));
+        assert_eq!(RegisterId::try_from(0xA4), Ok(RegisterId::LutPointValue));
+        assert_eq!(RegisterId::try_from(0xA5), Ok(RegisterId::LutStatus));
+        assert_eq!(RegisterId::try_from(0xB0), Ok(RegisterId::CalibCommand));
+        assert_eq!(RegisterId::try_from(0xB4), Ok(RegisterId::FlashStatus));
 
         assert_eq!(RegisterId::try_from(0x02), Err(RegisterError::UnknownRegister(0x02)));
         assert_eq!(RegisterId::try_from(0xFE), Err(RegisterError::UnknownRegister(0xFE)));
@@ -694,6 +877,16 @@ mod tests {
         assert_eq!(RegisterId::Position.expected_size(), 8);
         assert_eq!(RegisterId::PhaseVoltage.expected_size(), 12);
         assert_eq!(RegisterId::CurrentABC.expected_size(), 12);
+        assert_eq!(RegisterId::LinkageL2_L4.expected_size(), 12);
+        assert_eq!(RegisterId::LutPoints.expected_size(), 2);
+        assert_eq!(RegisterId::LutPointIndex.expected_size(), 2);
+        assert_eq!(RegisterId::MotorSelect.expected_size(), 1);
+
+        // Verify ALL covers all declared variants
+        assert_eq!(RegisterId::ALL.len(), 122);
+        for id in RegisterId::ALL {
+            assert_eq!(RegisterId::try_from(id as u8), Ok(id));
+        }
     }
 
     #[test]
@@ -706,6 +899,13 @@ mod tests {
         assert_eq!(buf[0], 0x42);
         let decoded = RegisterValue::from_bytes(RegisterId::Enable, &buf[..1]).unwrap();
         assert_eq!(decoded, val_u8);
+
+        // U16
+        let val_u16 = RegisterValue::U16(1024);
+        assert_eq!(val_u16.to_bytes(&mut buf).unwrap(), 2);
+        assert_eq!(buf[..2], 1024u16.to_le_bytes());
+        let decoded = RegisterValue::from_bytes(RegisterId::LutPoints, &buf[..2]).unwrap();
+        assert_eq!(decoded, val_u16);
 
         // Float
         let val_float = RegisterValue::Float(12.5f32);
@@ -742,6 +942,8 @@ mod tests {
         assert_eq!(f3.to_bytes(&mut buf).unwrap(), 12);
         let decoded = RegisterValue::from_bytes(RegisterId::PhaseVoltage, &buf[..12]).unwrap();
         assert_eq!(decoded, f3);
+        let decoded_linkage = RegisterValue::from_bytes(RegisterId::LinkageL2_L4, &buf[..12]).unwrap();
+        assert_eq!(decoded_linkage, f3);
 
         // PhaseState: [PhaseState; 3]
         let ps = RegisterValue::PhaseState([

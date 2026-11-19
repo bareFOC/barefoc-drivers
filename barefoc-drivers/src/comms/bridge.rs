@@ -110,6 +110,7 @@ pub fn read_register<C: Clock>(
         | RegisterId::CurBOffset
         | RegisterId::CurCOffset => Ok(RegisterValue::Float(0.0)),
 
+        RegisterId::MotorSelect => Ok(RegisterValue::U8(0)),
         RegisterId::NumMotors => Ok(RegisterValue::U8(1)),
         RegisterId::SysTime => Ok(RegisterValue::U32(0)),
 
@@ -326,6 +327,7 @@ pub fn write_register<C: Clock>(
             config.phase_inductance = val;
             Ok(())
         }
+        (RegisterId::MotorSelect, RegisterValue::U8(_)) => Ok(()),
 
         _ => Err(RegisterError::InvalidPayload),
     }
