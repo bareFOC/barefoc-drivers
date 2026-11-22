@@ -514,6 +514,44 @@ impl CurrentSense for DummyCurrentSense {
 }
 
 // ---------------------------------------------------------------------------
+// Kinematics MotorControl implementation
+// ---------------------------------------------------------------------------
+
+#[cfg(feature = "kinematics")]
+impl<'clk, S, D, CS, C> barefoc::kinematics::MotorControl<C> for DCMotor<'clk, S, D, CS, C>
+where
+    S: Sensor<C>,
+    D: DCDriver,
+    CS: CurrentSense,
+    C: Clock,
+{
+    #[inline]
+    fn shaft_angle(&self) -> f32 {
+        self.shaft_angle()
+    }
+
+    #[inline]
+    fn shaft_velocity(&mut self) -> f32 {
+        self.shaft_velocity()
+    }
+
+    #[inline]
+    fn velocity_limit(&self) -> f32 {
+        self.velocity_limit
+    }
+
+    #[inline]
+    fn move_motor(&mut self, target: f32, _clock: &C) {
+        self.move_motor(target);
+    }
+
+    #[inline]
+    fn loop_foc(&mut self, _clock: &C) {
+        // Brushed DC motors do not require high-speed commutation steps
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Unit tests
 // ---------------------------------------------------------------------------
 
@@ -850,5 +888,21 @@ mod tests {
 
         motor.move_motor(5.0);
         assert_eq!(motor.driver().unwrap().last_voltage, 0.0);
+    }
+
+    #[cfg(feature = "kinematics")]
+    #[test]
+    fn test_motor_control_trait_implementation() {
+        use barefoc::kinematics::MotorControl;
+
+        let clock = TestClock::new();
+        let mut motor: TestMotorDummy<'_> = DCMotor::new(&clock);
+        motor.link_driver(MockDCDriver::new());
+        motor.init();
+        motor.velocity_limit = 15.0;
+
+        assert_eq!(<DCMotor<'_, _, _, _, _> as MotorControl<TestClock>>::velocity_limit(&motor), 15.0);
+        <DCMotor<'_, _, _, _, _> as MotorControl<TestClock>>::loop_foc(&mut motor, &clock);
+        <DCMotor<'_, _, _, _, _> as MotorControl<TestClock>>::move_motor(&mut motor, 5.0, &clock);
     }
 }

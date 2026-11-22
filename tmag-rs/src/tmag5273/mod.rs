@@ -21,6 +21,17 @@ pub struct Tmag5273<I2C> {
 }
 
 impl<I2C> Tmag5273<I2C> {
+    /// Create a new uninitialized TMAG5273 driver with default configuration without performing bus I/O.
+    pub fn new_uninit(i2c: I2C, address: u8) -> Self {
+        Self {
+            i2c,
+            address,
+            config: Config::default(),
+            read_mode: I2cReadMode::Standard,
+            variant: DeviceVariant::A1,
+        }
+    }
+
     /// Create a fluent builder for configuring and initializing the driver.
     pub fn builder(i2c: I2C, address: u8) -> Tmag5273Builder<I2C> {
         Tmag5273Builder::new(i2c, address)

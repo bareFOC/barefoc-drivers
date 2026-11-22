@@ -35,6 +35,8 @@ pub enum Error<E> {
     },
     /// Hardware diagnostic fault detected.
     Fault(DeviceStatus),
+    /// No supported TMAG5273 device found on candidate addresses.
+    DeviceNotFound,
 }
 
 impl<E> From<E> for Error<E> {
@@ -73,6 +75,7 @@ impl<E: core::fmt::Display> core::fmt::Display for Error<E> {
                 )
             }
             Self::Fault(_) => write!(f, "hardware diagnostic fault active"),
+            Self::DeviceNotFound => write!(f, "no TMAG5273 device found on candidate addresses"),
         }
     }
 }

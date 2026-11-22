@@ -26,6 +26,7 @@
 
 pub mod angle;
 pub mod crc;
+pub mod discovery;
 pub mod error;
 pub mod magnetic;
 pub mod registers;
@@ -37,6 +38,7 @@ pub mod barefoc;
 
 pub use angle::{Angle, _PI, _2PI};
 pub use crc::crc8;
+pub use discovery::{discover, discover_with_frequencies, probe_device, CANDIDATE_ADDRESSES, CANDIDATE_FREQUENCIES_HZ};
 pub use error::Error;
 pub use magnetic::MagneticField3D;
 pub use tmag5273::{Tmag5273, Tmag5273Builder};
