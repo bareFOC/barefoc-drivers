@@ -48,7 +48,12 @@ pub mod voltage;
 pub mod utilities;
 pub mod dc;
 
+#[cfg(feature = "temperature")]
+pub mod temperature;
+
 pub use dc::CurrentMirrorSense;
+#[cfg(feature = "temperature")]
+pub use temperature::{NtcThermistor, ThermistorModel};
 
 #[cfg(test)]
 mod tests {

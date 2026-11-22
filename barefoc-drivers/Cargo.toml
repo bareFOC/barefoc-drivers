@@ -24,7 +24,7 @@ rtic = { workspace = true, optional = true }
 embedded-hal-mock = "0.10"
 
 [features]
-default = ["std", "encoders"]
+default = ["std", "encoders", "temperature"]
 defmt = ["dep:defmt", "barefoc/defmt", "mt6xxx-rs?/defmt"]
 rtic = ["dep:rtic", "barefoc/rtic"]
 std = ["barefoc/std", "mt6xxx-rs?/std", "tmag-rs?/std"]
@@ -34,6 +34,8 @@ encoders = ["dep:mt6xxx-rs"]
 kinematics = ["barefoc/kinematics"]
 mt6xxx = ["dep:mt6xxx-rs"]
 tmag = ["dep:tmag-rs"]
+# ADC-backed NTC thermistor temperature sensor (NtcThermistor).
+temperature = []
 # Per-encoder / per-driver feature flags are added as each module is ported.
 # See `PORTING_STATUS.md` Extended Drivers table.
 
