@@ -37,6 +37,11 @@ impl<I2C> Tmag5273Sensor<I2C> {
             consecutive_errors: Cell::new(0),
         }
     }
+
+    /// Return the number of consecutive read errors since the last valid sample.
+    pub fn consecutive_errors(&self) -> u8 {
+        self.consecutive_errors.get()
+    }
 }
 
 impl<I2C: I2c, C: Clock> Sensor<C> for Tmag5273Sensor<I2C> {
