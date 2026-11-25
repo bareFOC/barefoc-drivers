@@ -170,6 +170,18 @@ pub enum RegisterId {
     DriverVoltagePsu = 0x55,
     /// Sensor alignment voltage - R/W (float, 4 bytes).
     VoltageSensorAlign = 0x56,
+    /// Minimum soft position limit (rad) - R/W (float, 4 bytes).
+    MinPositionLimit = 0x57,
+    /// Maximum soft position limit (rad) - R/W (float, 4 bytes).
+    MaxPositionLimit = 0x58,
+    /// Kinematic stall timeout (ms) - R/W (u32, 4 bytes).
+    StallTimeoutMs = 0x59,
+    /// Latched hardware error status bitmask - RO (u16, 2 bytes).
+    HardwareErrorStatus = 0x5A,
+    /// Measured DC bus supply voltage (V) - RO (float, 4 bytes).
+    PresentBusVoltage = 0x5B,
+    /// Measured stage/motor temperature (°C) - RO (float, 4 bytes).
+    PresentTemperature = 0x5C,
     /// Motion control loop decimation - R/W (1 byte).
     MotionDownsample = 0x5F,
     /// Absolute zero electric angle - R/W (float, 4 bytes).
@@ -360,6 +372,12 @@ impl TryFrom<u8> for RegisterId {
             0x54 => Ok(RegisterId::PwmFrequency),
             0x55 => Ok(RegisterId::DriverVoltagePsu),
             0x56 => Ok(RegisterId::VoltageSensorAlign),
+            0x57 => Ok(RegisterId::MinPositionLimit),
+            0x58 => Ok(RegisterId::MaxPositionLimit),
+            0x59 => Ok(RegisterId::StallTimeoutMs),
+            0x5A => Ok(RegisterId::HardwareErrorStatus),
+            0x5B => Ok(RegisterId::PresentBusVoltage),
+            0x5C => Ok(RegisterId::PresentTemperature),
             0x5F => Ok(RegisterId::MotionDownsample),
             0x60 => Ok(RegisterId::ZeroElectricAngle),
             0x61 => Ok(RegisterId::SensorDirection),
@@ -458,7 +476,10 @@ impl RegisterId {
             | RegisterId::CalibProgress
             | RegisterId::LutPoints
             | RegisterId::LutStatus
-            | RegisterId::FlashStatus => AccessMode::ReadOnly,
+            | RegisterId::FlashStatus
+            | RegisterId::HardwareErrorStatus
+            | RegisterId::PresentBusVoltage
+            | RegisterId::PresentTemperature => AccessMode::ReadOnly,
 
             RegisterId::EnableAll | RegisterId::DriverEnable => AccessMode::WriteOnly,
 
@@ -504,7 +525,7 @@ impl RegisterId {
             | RegisterId::CalibCommand
             | RegisterId::FlashStatus => 1,
 
-            RegisterId::LutPoints | RegisterId::LutPointIndex => 2,
+            RegisterId::LutPoints | RegisterId::LutPointIndex | RegisterId::HardwareErrorStatus => 2,
 
             RegisterId::PhaseState => 3,
 
@@ -517,7 +538,7 @@ impl RegisterId {
         }
     }
 
-    pub const ALL: [RegisterId; 122] = [
+    pub const ALL: [RegisterId; 128] = [
         RegisterId::Status,
         RegisterId::Target,
         RegisterId::EnableAll,
@@ -579,6 +600,12 @@ impl RegisterId {
         RegisterId::PwmFrequency,
         RegisterId::DriverVoltagePsu,
         RegisterId::VoltageSensorAlign,
+        RegisterId::MinPositionLimit,
+        RegisterId::MaxPositionLimit,
+        RegisterId::StallTimeoutMs,
+        RegisterId::HardwareErrorStatus,
+        RegisterId::PresentBusVoltage,
+        RegisterId::PresentTemperature,
         RegisterId::MotionDownsample,
         RegisterId::ZeroElectricAngle,
         RegisterId::SensorDirection,
@@ -641,6 +668,54 @@ impl RegisterId {
         RegisterId::CalibStallThresh,
         RegisterId::FlashStatus,
     ];
+
+    /// Precomputed 4-byte-aligned, non-overlapping byte offsets for [`RegisterId::ALL`].
+    pub const ALIGNED_OFFSETS: [u16; 128] = {
+        let mut offsets = [0u16; 128];
+        let mut cursor = 0usize;
+        let mut i = 0usize;
+        while i < 128 {
+            offsets[i] = cursor as u16;
+            let size = Self::ALL[i].expected_size();
+            let stride = (size + 3) & !3;
+            cursor += stride;
+            i += 1;
+        }
+        offsets
+    };
+
+    /// Total byte span occupied by all registers in [`RegisterId::ALL`], 4-byte aligned.
+    pub const ALIGNED_SPAN: u16 = {
+        let last_idx = 127usize;
+        let last_off = Self::ALIGNED_OFFSETS[last_idx] as usize;
+        let last_stride = (Self::ALL[last_idx].expected_size() + 3) & !3;
+        (last_off + last_stride) as u16
+    };
+
+    /// Return the 4-byte-aligned, non-overlapping byte offset for this register
+    /// in a MultiBus [`RegMap`](crate::comms::registers).
+    pub const fn aligned_offset(self) -> u16 {
+        let mut i = 0usize;
+        while i < 128 {
+            if Self::ALL[i] as u8 == self as u8 {
+                return Self::ALIGNED_OFFSETS[i];
+            }
+            i += 1;
+        }
+        0
+    }
+
+    /// Resolve a 4-byte-aligned byte offset back to its [`RegisterId`].
+    pub const fn from_aligned_offset(offset: u16) -> Option<Self> {
+        let mut i = 0usize;
+        while i < 128 {
+            if Self::ALIGNED_OFFSETS[i] == offset {
+                return Some(Self::ALL[i]);
+            }
+            i += 1;
+        }
+        None
+    }
 }
 
 /// Typed representation of register payload data.
@@ -765,7 +840,7 @@ impl RegisterValue {
             | RegisterId::CalibCommand
             | RegisterId::FlashStatus => Ok(RegisterValue::U8(buf[0])),
 
-            RegisterId::LutPoints | RegisterId::LutPointIndex => {
+            RegisterId::LutPoints | RegisterId::LutPointIndex | RegisterId::HardwareErrorStatus => {
                 let val = u16::from_le_bytes(buf[0..2].try_into().unwrap());
                 Ok(RegisterValue::U16(val))
             }
@@ -794,6 +869,7 @@ impl RegisterValue {
             | RegisterId::TelemetryDownsample
             | RegisterId::IterationsSec
             | RegisterId::PwmFrequency
+            | RegisterId::StallTimeoutMs
             | RegisterId::SysTime => {
                 let val = u32::from_le_bytes(buf[0..4].try_into().unwrap());
                 Ok(RegisterValue::U32(val))
@@ -883,7 +959,7 @@ mod tests {
         assert_eq!(RegisterId::MotorSelect.expected_size(), 1);
 
         // Verify ALL covers all declared variants
-        assert_eq!(RegisterId::ALL.len(), 122);
+        assert_eq!(RegisterId::ALL.len(), 128);
         for id in RegisterId::ALL {
             assert_eq!(RegisterId::try_from(id as u8), Ok(id));
         }

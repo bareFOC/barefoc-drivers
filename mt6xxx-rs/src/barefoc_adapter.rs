@@ -5,7 +5,7 @@
 //! - [`MagneticSensorMT6701SSI.cpp`](ref/Miniata/simplefoc-drivers/src/encoders/mt6701/MagneticSensorMT6701SSI.cpp)
 
 use barefoc::common::time::Clock;
-use barefoc::traits::sensor::{Sensor, SensorBase};
+use barefoc::traits::sensor::{Sensor, SensorBase, SensorStatus};
 use embedded_hal::spi::SpiDevice;
 
 use crate::mt6701::blocking::Mt6701;
@@ -21,5 +21,16 @@ impl<SPI: SpiDevice, C: Clock> Sensor<C> for Mt6701<SPI> {
 
     fn get_sensor_angle(&self) -> f32 {
         self.read_angle_radians()
+    }
+
+    fn status(&self) -> SensorStatus {
+        if self.has_fault() {
+            return SensorStatus::CrcError;
+        }
+        let st = self.last_status();
+        if st.los || st.mgh || st.mgl {
+            return SensorStatus::MagFieldFault;
+        }
+        SensorStatus::Ok
     }
 }
