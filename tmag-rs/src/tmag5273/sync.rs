@@ -49,76 +49,17 @@ impl<I2C: I2c> Tmag5273Builder<I2C> {
             .write(self.address, &[DEVICE_STATUS, FAULT_CLEAR_MASK])
             .map_err(Error::I2c)?;
 
-        // 4. Configure device registers
-        // DEVICE_CONFIG_1
-        let mut dc1 = 0u8;
-        if self.config.crc_enabled {
-            dc1 |= CRC_EN_MASK;
-        }
-        dc1 = insert(dc1, CONV_AVG_MASK, CONV_AVG_SHIFT, self.config.averaging as u8);
-        dc1 = insert(dc1, I2C_RD_MASK, I2C_RD_SHIFT, self.config.read_mode as u8);
-        self.i2c
-            .write(self.address, &[DEVICE_CONFIG_1, dc1])
-            .map_err(Error::I2c)?;
-
-        // DEVICE_CONFIG_2
-        let mut dc2 = 0u8;
-        dc2 = insert(dc2, LP_LN_MASK, LP_LN_SHIFT, self.config.power_noise as u8);
-        if self.config.glitch_filter {
-            dc2 |= I2C_GLITCH_FILTER_MASK;
-        }
-        dc2 = insert(
-            dc2,
-            OPERATING_MODE_MASK,
-            OPERATING_MODE_SHIFT,
-            self.config.operating_mode as u8,
-        );
-        self.i2c
-            .write(self.address, &[DEVICE_CONFIG_2, dc2])
-            .map_err(Error::I2c)?;
-
-        // SENSOR_CONFIG_1
-        let sc1 = insert(0, MAG_CH_EN_MASK, MAG_CH_EN_SHIFT, self.config.channels as u8);
-        self.i2c
-            .write(self.address, &[SENSOR_CONFIG_1, sc1])
-            .map_err(Error::I2c)?;
-
-        // SENSOR_CONFIG_2
-        let mut sc2 = 0u8;
-        sc2 = insert(
-            sc2,
-            ANGLE_EN_MASK,
-            ANGLE_EN_SHIFT,
-            self.config.angle_enabled as u8,
-        );
-        sc2 = insert(
-            sc2,
-            X_Y_RANGE_MASK,
-            X_Y_RANGE_SHIFT,
-            self.config.xy_range as u8,
-        );
-        sc2 = insert(sc2, Z_RANGE_MASK, Z_RANGE_SHIFT, self.config.z_range as u8);
-        self.i2c
-            .write(self.address, &[SENSOR_CONFIG_2, sc2])
-            .map_err(Error::I2c)?;
-
-        // T_CONFIG
-        let tc = if self.config.temp_enabled {
-            T_CH_EN_MASK
-        } else {
-            0
-        };
-        self.i2c
-            .write(self.address, &[T_CONFIG, tc])
-            .map_err(Error::I2c)?;
-
-        Ok(Tmag5273 {
+        // 4. Configure device registers via shared reconfigure()
+        let config = self.config;
+        let mut dev = Tmag5273 {
             i2c: self.i2c,
             address: self.address,
-            config: self.config,
-            read_mode: self.config.read_mode,
-            variant: self.config.variant,
-        })
+            config,
+            read_mode: config.read_mode,
+            variant: config.variant,
+        };
+        dev.reconfigure(config)?;
+        Ok(dev)
     }
 }
 
@@ -269,5 +210,182 @@ impl<I2C: I2c> Tmag5273<I2C> {
         self.write_register(DEVICE_CONFIG_2, updated)?;
         self.config.operating_mode = mode;
         Ok(())
+    }
+
+    /// Update X and Y axis magnetic measurement range in `SENSOR_CONFIG_2` (0x03).
+    pub fn set_xy_range(&mut self, range: Range) -> Result<(), Error<I2C::Error>> {
+        let current = self.read_register(SENSOR_CONFIG_2)?;
+        let updated = insert(current, X_Y_RANGE_MASK, X_Y_RANGE_SHIFT, range as u8);
+        self.write_register(SENSOR_CONFIG_2, updated)?;
+        self.config.xy_range = range;
+        Ok(())
+    }
+
+    /// Update Z axis magnetic measurement range in `SENSOR_CONFIG_2` (0x03).
+    pub fn set_z_range(&mut self, range: Range) -> Result<(), Error<I2C::Error>> {
+        let current = self.read_register(SENSOR_CONFIG_2)?;
+        let updated = insert(current, Z_RANGE_MASK, Z_RANGE_SHIFT, range as u8);
+        self.write_register(SENSOR_CONFIG_2, updated)?;
+        self.config.z_range = range;
+        Ok(())
+    }
+
+    /// Update conversion averaging filter in `DEVICE_CONFIG_1` (0x00).
+    pub fn set_averaging(&mut self, avg: ConversionAverage) -> Result<(), Error<I2C::Error>> {
+        let current = self.read_register(DEVICE_CONFIG_1)?;
+        let updated = insert(current, CONV_AVG_MASK, CONV_AVG_SHIFT, avg as u8);
+        self.write_register(DEVICE_CONFIG_1, updated)?;
+        self.config.averaging = avg;
+        Ok(())
+    }
+
+    /// Update power vs. noise mode in `DEVICE_CONFIG_2` (0x01).
+    pub fn set_power_noise(&mut self, mode: PowerNoiseMode) -> Result<(), Error<I2C::Error>> {
+        let current = self.read_register(DEVICE_CONFIG_2)?;
+        let updated = insert(current, LP_LN_MASK, LP_LN_SHIFT, mode as u8);
+        self.write_register(DEVICE_CONFIG_2, updated)?;
+        self.config.power_noise = mode;
+        Ok(())
+    }
+
+    /// Enable or disable the I2C glitch filter in `DEVICE_CONFIG_2` (0x01).
+    pub fn set_glitch_filter(&mut self, enabled: bool) -> Result<(), Error<I2C::Error>> {
+        let current = self.read_register(DEVICE_CONFIG_2)?;
+        let updated = if enabled {
+            current | I2C_GLITCH_FILTER_MASK
+        } else {
+            current & !I2C_GLITCH_FILTER_MASK
+        };
+        self.write_register(DEVICE_CONFIG_2, updated)?;
+        self.config.glitch_filter = enabled;
+        Ok(())
+    }
+
+    /// Enable or disable CRC-8 on I2C transactions in `DEVICE_CONFIG_1` (0x00).
+    pub fn set_crc_enabled(&mut self, enabled: bool) -> Result<(), Error<I2C::Error>> {
+        let current = self.read_register(DEVICE_CONFIG_1)?;
+        let updated = if enabled {
+            current | CRC_EN_MASK
+        } else {
+            current & !CRC_EN_MASK
+        };
+        self.write_register(DEVICE_CONFIG_1, updated)?;
+        self.config.crc_enabled = enabled;
+        Ok(())
+    }
+
+    /// Reconfigure all device configuration registers in-place without dropping the I2C peripheral.
+    pub fn reconfigure(&mut self, cfg: Config) -> Result<(), Error<I2C::Error>> {
+        // DEVICE_CONFIG_1
+        let mut dc1 = 0u8;
+        if cfg.crc_enabled {
+            dc1 |= CRC_EN_MASK;
+        }
+        dc1 = insert(dc1, CONV_AVG_MASK, CONV_AVG_SHIFT, cfg.averaging as u8);
+        dc1 = insert(dc1, I2C_RD_MASK, I2C_RD_SHIFT, cfg.read_mode as u8);
+        self.write_register(DEVICE_CONFIG_1, dc1)?;
+
+        // DEVICE_CONFIG_2
+        let mut dc2 = 0u8;
+        dc2 = insert(dc2, LP_LN_MASK, LP_LN_SHIFT, cfg.power_noise as u8);
+        if cfg.glitch_filter {
+            dc2 |= I2C_GLITCH_FILTER_MASK;
+        }
+        dc2 = insert(
+            dc2,
+            OPERATING_MODE_MASK,
+            OPERATING_MODE_SHIFT,
+            cfg.operating_mode as u8,
+        );
+        self.write_register(DEVICE_CONFIG_2, dc2)?;
+
+        // SENSOR_CONFIG_1
+        let sc1 = insert(0, MAG_CH_EN_MASK, MAG_CH_EN_SHIFT, cfg.channels as u8);
+        self.write_register(SENSOR_CONFIG_1, sc1)?;
+
+        // SENSOR_CONFIG_2
+        let mut sc2 = 0u8;
+        sc2 = insert(sc2, ANGLE_EN_MASK, ANGLE_EN_SHIFT, cfg.angle_enabled as u8);
+        sc2 = insert(sc2, X_Y_RANGE_MASK, X_Y_RANGE_SHIFT, cfg.xy_range as u8);
+        sc2 = insert(sc2, Z_RANGE_MASK, Z_RANGE_SHIFT, cfg.z_range as u8);
+        self.write_register(SENSOR_CONFIG_2, sc2)?;
+
+        // T_CONFIG
+        let tc = if cfg.temp_enabled { T_CH_EN_MASK } else { 0 };
+        self.write_register(T_CONFIG, tc)?;
+
+        self.config = cfg;
+        self.read_mode = cfg.read_mode;
+        self.variant = cfg.variant;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use embedded_hal_mock::eh1::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
+
+    #[test]
+    fn live_setters_update_registers_and_cached_config() {
+        let addr = 0x35;
+        let expectations = [
+            // set_xy_range(Range::Low) -> read SENSOR_CONFIG_2 (0x03), write updated
+            I2cTransaction::write_read(addr, vec![SENSOR_CONFIG_2], vec![0x06]),
+            I2cTransaction::write(addr, vec![SENSOR_CONFIG_2, 0x04]),
+            // set_averaging(ConversionAverage::Avg8x) -> read DEVICE_CONFIG_1 (0x00), write updated
+            I2cTransaction::write_read(addr, vec![DEVICE_CONFIG_1], vec![0x00]),
+            I2cTransaction::write(addr, vec![DEVICE_CONFIG_1, 0x0C]),
+            // set_crc_enabled(true) -> read DEVICE_CONFIG_1 (0x00), write updated
+            I2cTransaction::write_read(addr, vec![DEVICE_CONFIG_1], vec![0x0C]),
+            I2cTransaction::write(addr, vec![DEVICE_CONFIG_1, 0x8C]),
+        ];
+        let i2c = I2cMock::new(&expectations);
+        let mut dev = Tmag5273::new_uninit(i2c, addr);
+
+        dev.set_xy_range(Range::Low).unwrap();
+        assert_eq!(dev.config().xy_range, Range::Low);
+
+        dev.set_averaging(ConversionAverage::Avg8x).unwrap();
+        assert_eq!(dev.config().averaging, ConversionAverage::Avg8x);
+
+        dev.set_crc_enabled(true).unwrap();
+        assert!(dev.config().crc_enabled);
+
+        dev.into_inner().done();
+    }
+
+    #[test]
+    fn reconfigure_writes_all_config_registers_in_place() {
+        let addr = 0x35;
+        let cfg = Config {
+            xy_range: Range::Low,
+            z_range: Range::Low,
+            averaging: ConversionAverage::Avg4x,
+            power_noise: PowerNoiseMode::LowNoise,
+            glitch_filter: true,
+            crc_enabled: true,
+            operating_mode: OperatingMode::ContinuousMeasure,
+            channels: MagneticChannel::XYZ,
+            angle_enabled: AngleEnable::XY,
+            ..Config::default()
+        };
+        let expectations = [
+            I2cTransaction::write(addr, vec![DEVICE_CONFIG_1, 0x88]),
+            I2cTransaction::write(addr, vec![DEVICE_CONFIG_2, 0x1A]),
+            I2cTransaction::write(addr, vec![SENSOR_CONFIG_1, 0x70]),
+            I2cTransaction::write(addr, vec![SENSOR_CONFIG_2, 0x04]),
+            I2cTransaction::write(addr, vec![T_CONFIG, 0x00]),
+        ];
+        let i2c = I2cMock::new(&expectations);
+        let mut dev = Tmag5273::new_uninit(i2c, addr);
+
+        dev.reconfigure(cfg).unwrap();
+        assert_eq!(dev.config().xy_range, Range::Low);
+        assert_eq!(dev.config().averaging, ConversionAverage::Avg4x);
+        assert!(dev.config().crc_enabled);
+        assert!(dev.config().glitch_filter);
+
+        dev.into_inner().done();
     }
 }

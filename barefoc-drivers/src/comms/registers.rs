@@ -304,6 +304,16 @@ pub enum RegisterId {
     CalibStallThresh = 0xB3,
     /// Kinematics: flash storage status - RO (1 byte).
     FlashStatus = 0xB4,
+    /// Sensor communication bus clock frequency in Hz - R/W (u32, 4 bytes).
+    SensorBusFreqHz = 0xB5,
+    /// Sensor measurement range selector (0=Low, 1=High) - R/W (1 byte).
+    SensorRange = 0xB6,
+    /// Sensor conversion averaging index (0..=5) - R/W (1 byte).
+    SensorAveraging = 0xB7,
+    /// Sensor frame CRC enable flag (0=off, 1=on) - R/W (1 byte).
+    SensorCrcEnable = 0xB8,
+    /// Sensor health/fault status (`SensorStatus as u8`) - RO (1 byte).
+    SensorFaultStatus = 0xB9,
 }
 
 impl TryFrom<u8> for RegisterId {
@@ -439,6 +449,11 @@ impl TryFrom<u8> for RegisterId {
             0xB2 => Ok(RegisterId::CalibSweepVel),
             0xB3 => Ok(RegisterId::CalibStallThresh),
             0xB4 => Ok(RegisterId::FlashStatus),
+            0xB5 => Ok(RegisterId::SensorBusFreqHz),
+            0xB6 => Ok(RegisterId::SensorRange),
+            0xB7 => Ok(RegisterId::SensorAveraging),
+            0xB8 => Ok(RegisterId::SensorCrcEnable),
+            0xB9 => Ok(RegisterId::SensorFaultStatus),
             other => Err(RegisterError::UnknownRegister(other)),
         }
     }
@@ -479,7 +494,8 @@ impl RegisterId {
             | RegisterId::FlashStatus
             | RegisterId::HardwareErrorStatus
             | RegisterId::PresentBusVoltage
-            | RegisterId::PresentTemperature => AccessMode::ReadOnly,
+            | RegisterId::PresentTemperature
+            | RegisterId::SensorFaultStatus => AccessMode::ReadOnly,
 
             RegisterId::EnableAll | RegisterId::DriverEnable => AccessMode::WriteOnly,
 
@@ -523,7 +539,11 @@ impl RegisterId {
             | RegisterId::CalibProgress
             | RegisterId::LutStatus
             | RegisterId::CalibCommand
-            | RegisterId::FlashStatus => 1,
+            | RegisterId::FlashStatus
+            | RegisterId::SensorRange
+            | RegisterId::SensorAveraging
+            | RegisterId::SensorCrcEnable
+            | RegisterId::SensorFaultStatus => 1,
 
             RegisterId::LutPoints | RegisterId::LutPointIndex | RegisterId::HardwareErrorStatus => 2,
 
@@ -538,7 +558,7 @@ impl RegisterId {
         }
     }
 
-    pub const ALL: [RegisterId; 128] = [
+    pub const ALL: [RegisterId; 133] = [
         RegisterId::Status,
         RegisterId::Target,
         RegisterId::EnableAll,
@@ -667,14 +687,19 @@ impl RegisterId {
         RegisterId::CalibSweepVel,
         RegisterId::CalibStallThresh,
         RegisterId::FlashStatus,
+        RegisterId::SensorBusFreqHz,
+        RegisterId::SensorRange,
+        RegisterId::SensorAveraging,
+        RegisterId::SensorCrcEnable,
+        RegisterId::SensorFaultStatus,
     ];
 
     /// Precomputed 4-byte-aligned, non-overlapping byte offsets for [`RegisterId::ALL`].
-    pub const ALIGNED_OFFSETS: [u16; 128] = {
-        let mut offsets = [0u16; 128];
+    pub const ALIGNED_OFFSETS: [u16; 133] = {
+        let mut offsets = [0u16; 133];
         let mut cursor = 0usize;
         let mut i = 0usize;
-        while i < 128 {
+        while i < 133 {
             offsets[i] = cursor as u16;
             let size = Self::ALL[i].expected_size();
             let stride = (size + 3) & !3;
@@ -686,7 +711,7 @@ impl RegisterId {
 
     /// Total byte span occupied by all registers in [`RegisterId::ALL`], 4-byte aligned.
     pub const ALIGNED_SPAN: u16 = {
-        let last_idx = 127usize;
+        let last_idx = 132usize;
         let last_off = Self::ALIGNED_OFFSETS[last_idx] as usize;
         let last_stride = (Self::ALL[last_idx].expected_size() + 3) & !3;
         (last_off + last_stride) as u16
@@ -696,7 +721,7 @@ impl RegisterId {
     /// in a MultiBus [`RegMap`](crate::comms::registers).
     pub const fn aligned_offset(self) -> u16 {
         let mut i = 0usize;
-        while i < 128 {
+        while i < 133 {
             if Self::ALL[i] as u8 == self as u8 {
                 return Self::ALIGNED_OFFSETS[i];
             }
@@ -708,7 +733,7 @@ impl RegisterId {
     /// Resolve a 4-byte-aligned byte offset back to its [`RegisterId`].
     pub const fn from_aligned_offset(offset: u16) -> Option<Self> {
         let mut i = 0usize;
-        while i < 128 {
+        while i < 133 {
             if Self::ALIGNED_OFFSETS[i] == offset {
                 return Some(Self::ALL[i]);
             }
@@ -838,7 +863,11 @@ impl RegisterValue {
             | RegisterId::CalibProgress
             | RegisterId::LutStatus
             | RegisterId::CalibCommand
-            | RegisterId::FlashStatus => Ok(RegisterValue::U8(buf[0])),
+            | RegisterId::FlashStatus
+            | RegisterId::SensorRange
+            | RegisterId::SensorAveraging
+            | RegisterId::SensorCrcEnable
+            | RegisterId::SensorFaultStatus => Ok(RegisterValue::U8(buf[0])),
 
             RegisterId::LutPoints | RegisterId::LutPointIndex | RegisterId::HardwareErrorStatus => {
                 let val = u16::from_le_bytes(buf[0..2].try_into().unwrap());
@@ -870,7 +899,8 @@ impl RegisterValue {
             | RegisterId::IterationsSec
             | RegisterId::PwmFrequency
             | RegisterId::StallTimeoutMs
-            | RegisterId::SysTime => {
+            | RegisterId::SysTime
+            | RegisterId::SensorBusFreqHz => {
                 let val = u32::from_le_bytes(buf[0..4].try_into().unwrap());
                 Ok(RegisterValue::U32(val))
             }
@@ -959,10 +989,27 @@ mod tests {
         assert_eq!(RegisterId::MotorSelect.expected_size(), 1);
 
         // Verify ALL covers all declared variants
-        assert_eq!(RegisterId::ALL.len(), 128);
+        assert_eq!(RegisterId::ALL.len(), 133);
         for id in RegisterId::ALL {
             assert_eq!(RegisterId::try_from(id as u8), Ok(id));
         }
+
+        // Verify 4-byte alignment and zero overlaps across all registers
+        for i in 0..RegisterId::ALL.len() {
+            let off = RegisterId::ALIGNED_OFFSETS[i];
+            assert_eq!(off % 4, 0, "offset 0x{:X} not 4-byte aligned", off);
+            if i + 1 < RegisterId::ALL.len() {
+                let end = off as usize + RegisterId::ALL[i].expected_size();
+                assert!(end <= RegisterId::ALIGNED_OFFSETS[i + 1] as usize);
+            }
+        }
+        assert_eq!(RegisterId::SensorFaultStatus.is_read_only(), true);
+        assert_eq!(RegisterId::SensorBusFreqHz.is_read_only(), false);
+        assert_eq!(RegisterId::SensorBusFreqHz.expected_size(), 4);
+        assert_eq!(RegisterId::SensorRange.expected_size(), 1);
+        assert_eq!(RegisterId::SensorAveraging.expected_size(), 1);
+        assert_eq!(RegisterId::SensorCrcEnable.expected_size(), 1);
+        assert_eq!(RegisterId::SensorFaultStatus.expected_size(), 1);
     }
 
     #[test]
