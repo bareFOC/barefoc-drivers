@@ -58,10 +58,19 @@ impl<I2C: I2c, C: Clock> Sensor<C> for Tmag5273Sensor<I2C> {
             match driver.read_angle() {
                 Ok(angle) => {
                     let rad = angle.radians();
-                    self.consecutive_errors.set(0);
-                    self.last_status.set(SensorStatus::Ok);
-                    self.last_angle.set(rad);
-                    rad
+                    if rad.is_finite() && rad >= 0.0 && rad < barefoc::math::_2PI {
+                        self.consecutive_errors.set(0);
+                        self.last_status.set(SensorStatus::Ok);
+                        self.last_angle.set(rad);
+                        rad
+                    } else {
+                        let count = self.consecutive_errors.get().saturating_add(1);
+                        self.consecutive_errors.set(count);
+                        if count >= SENSOR_ERR_DEBOUNCE {
+                            self.last_status.set(SensorStatus::MagFieldFault);
+                        }
+                        self.last_angle.get()
+                    }
                 }
                 Err(err) => {
                     let count = self.consecutive_errors.get().saturating_add(1);
@@ -174,6 +183,37 @@ mod tests {
             }),
             Err(SensorConfigError::InvalidParameter)
         );
+
+        sensor.driver.into_inner().into_inner().done();
+    }
+
+    #[test]
+    fn tmag5273_sensor_validates_angle_and_preserves_last_good() {
+        use crate::types::AngleEnable;
+        use barefoc::motor::base::NullClock;
+
+        let addr = 0x35;
+        // 1st read: 90.0 deg -> raw = 90 * 16 = 1440 = 0x05A0
+        // 2nd read: out-of-range (>= 360 deg, e.g. 0x1680 = 360.0 deg = 2*pi)
+        let expectations = [
+            I2cTransaction::write_read(addr, vec![ANGLE_RESULT_MSB], vec![0x05, 0xA0]),
+            I2cTransaction::write_read(addr, vec![ANGLE_RESULT_MSB], vec![0x16, 0x80]),
+        ];
+        let i2c = I2cMock::new(&expectations);
+        let mut dev = Tmag5273::new_uninit(i2c, addr);
+        dev.config.angle_enabled = AngleEnable::XY;
+        let sensor = Tmag5273Sensor::new(dev);
+
+        let clock = NullClock;
+        let _ = &clock;
+        let a1 = <Tmag5273Sensor<I2cMock> as Sensor<NullClock>>::get_sensor_angle(&sensor);
+        assert!((a1 - core::f32::consts::FRAC_PI_2).abs() < 1e-3);
+        assert_eq!(sensor.consecutive_errors(), 0);
+
+        // 360.0 deg == _2PI -> rejected, returns last good angle and increments error count
+        let a2 = <Tmag5273Sensor<I2cMock> as Sensor<NullClock>>::get_sensor_angle(&sensor);
+        assert!((a2 - a1).abs() < 1e-6);
+        assert_eq!(sensor.consecutive_errors(), 1);
 
         sensor.driver.into_inner().into_inner().done();
     }
