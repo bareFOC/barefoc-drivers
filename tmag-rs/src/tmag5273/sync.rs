@@ -74,78 +74,48 @@ impl<I2C: I2c> Tmag5273<I2C> {
     }
 
     /// Write a single register byte.
+    ///
+    /// Per TI TMAG5273 Datasheet Section 6.5.1.3.1, I2C register writes do not
+    /// carry a CRC byte even when `CRC_EN` is set; only I2C reads append CRC-8.
     #[inline]
     pub fn write_register(&mut self, register: u8, value: u8) -> Result<(), Error<I2C::Error>> {
-        if self.config.crc_enabled {
-            let addr_w = self.address << 1;
-            let crc = crate::crc::crc8(&[addr_w, register, value]);
-            self.i2c
-                .write(self.address, &[register, value, crc])
-                .map_err(Error::I2c)
-        } else {
-            self.i2c
-                .write(self.address, &[register, value])
-                .map_err(Error::I2c)
-        }
+        self.i2c
+            .write(self.address, &[register, value])
+            .map_err(Error::I2c)
     }
 
     /// Read a single register byte.
     #[inline]
     pub fn read_register(&mut self, register: u8) -> Result<u8, Error<I2C::Error>> {
-        if self.config.crc_enabled {
-            let mut buf = [0u8; 2];
-            self.i2c
-                .write_read(self.address, &[register], &mut buf)
-                .map_err(Error::I2c)?;
-            let addr_w = self.address << 1;
-            let addr_r = addr_w | 1;
-            let computed = crate::crc::crc8(&[addr_w, register, addr_r, buf[0]]);
-            if buf[1] != computed {
-                return Err(Error::CrcMismatch {
-                    expected: buf[1],
-                    computed,
-                });
-            }
-            Ok(buf[0])
-        } else {
-            let mut buf = [0u8; 1];
-            self.i2c
-                .write_read(self.address, &[register], &mut buf)
-                .map_err(Error::I2c)?;
-            Ok(buf[0])
-        }
+        let mut buf = [0u8; 1];
+        self.read_registers(register, &mut buf)?;
+        Ok(buf[0])
     }
 
     /// Read multiple contiguous register bytes starting at `register`.
+    ///
+    /// In TMAG5273 standard 3-byte read mode with `CRC_EN = 1`, the sensor
+    /// appends the CRC-8 byte after 4 consecutive data bytes (`[d0, d1, d2, d3, crc]`),
+    /// computed over those 4 data bytes (`0x07` polynomial, init `0xFF`).
     #[inline]
     pub fn read_registers(&mut self, register: u8, buf: &mut [u8]) -> Result<(), Error<I2C::Error>> {
         if buf.is_empty() {
             return Ok(());
         }
-        if self.config.crc_enabled {
-            let n = buf.len();
-            let mut tmp = [0u8; 64];
-            if n >= tmp.len() {
-                return self
-                    .i2c
-                    .write_read(self.address, &[register], buf)
-                    .map_err(Error::I2c);
-            }
+        if self.config.crc_enabled && buf.len() <= 4 {
+            let mut tmp = [0u8; 5];
             self.i2c
-                .write_read(self.address, &[register], &mut tmp[..n + 1])
+                .write_read(self.address, &[register], &mut tmp)
                 .map_err(Error::I2c)?;
-            let addr_w = self.address << 1;
-            let addr_r = addr_w | 1;
-            let mut computed = crate::crc::crc8_update(0xFF, &[addr_w, register, addr_r]);
-            computed = crate::crc::crc8_update(computed, &tmp[..n]);
-            let rx_crc = tmp[n];
+            let computed = crate::crc::crc8(&tmp[..4]);
+            let rx_crc = tmp[4];
             if rx_crc != computed {
                 return Err(Error::CrcMismatch {
                     expected: rx_crc,
                     computed,
                 });
             }
-            buf.copy_from_slice(&tmp[..n]);
+            buf.copy_from_slice(&tmp[..buf.len()]);
             Ok(())
         } else {
             self.i2c
@@ -432,39 +402,12 @@ mod tests {
             angle_enabled: AngleEnable::XY,
             ..Config::default()
         };
-        let addr_w = addr << 1;
         let expectations = [
-            // DEVICE_CONFIG_1 written while crc_enabled is still false (2-byte write)
             I2cTransaction::write(addr, vec![DEVICE_CONFIG_1, 0x88]),
-            // Subsequent registers written with CRC-8 appended
-            I2cTransaction::write(
-                addr,
-                vec![
-                    DEVICE_CONFIG_2,
-                    0x1A,
-                    crate::crc::crc8(&[addr_w, DEVICE_CONFIG_2, 0x1A]),
-                ],
-            ),
-            I2cTransaction::write(
-                addr,
-                vec![
-                    SENSOR_CONFIG_1,
-                    0x70,
-                    crate::crc::crc8(&[addr_w, SENSOR_CONFIG_1, 0x70]),
-                ],
-            ),
-            I2cTransaction::write(
-                addr,
-                vec![
-                    SENSOR_CONFIG_2,
-                    0x04,
-                    crate::crc::crc8(&[addr_w, SENSOR_CONFIG_2, 0x04]),
-                ],
-            ),
-            I2cTransaction::write(
-                addr,
-                vec![T_CONFIG, 0x00, crate::crc::crc8(&[addr_w, T_CONFIG, 0x00])],
-            ),
+            I2cTransaction::write(addr, vec![DEVICE_CONFIG_2, 0x1A]),
+            I2cTransaction::write(addr, vec![SENSOR_CONFIG_1, 0x70]),
+            I2cTransaction::write(addr, vec![SENSOR_CONFIG_2, 0x04]),
+            I2cTransaction::write(addr, vec![T_CONFIG, 0x00]),
         ];
         let i2c = I2cMock::new(&expectations);
         let mut dev = Tmag5273::new_uninit(i2c, addr);
@@ -481,24 +424,24 @@ mod tests {
     #[test]
     fn crc8_read_write_and_angle_verification() {
         let addr = 0x35;
-        let addr_w = addr << 1;
-        let addr_r = addr_w | 1;
 
-        let write_crc = crate::crc::crc8(&[addr_w, DEVICE_CONFIG_2, 0x02]);
-        let reg_read_crc = crate::crc::crc8(&[addr_w, DEVICE_STATUS, addr_r, 0x00]);
+        let reg_read_crc = crate::crc::crc8(&[0x00, 0x01, 0x02, 0x03]);
         // Angle raw = 0x0B40 (180.0 deg = (0x0B40 >> 4) + (0x0B40 & 0xF)/16)
         let angle_msb = 0x0Bu8;
         let angle_lsb = 0x40u8;
-        let angle_crc =
-            crate::crc::crc8(&[addr_w, ANGLE_RESULT_MSB, addr_r, angle_msb, angle_lsb]);
+        let angle_crc = crate::crc::crc8(&[angle_msb, angle_lsb, 0x10, 0x20]);
 
         let expectations = [
-            I2cTransaction::write(addr, vec![DEVICE_CONFIG_2, 0x02, write_crc]),
-            I2cTransaction::write_read(addr, vec![DEVICE_STATUS], vec![0x00, reg_read_crc]),
+            I2cTransaction::write(addr, vec![DEVICE_CONFIG_2, 0x02]),
+            I2cTransaction::write_read(
+                addr,
+                vec![DEVICE_STATUS],
+                vec![0x00, 0x01, 0x02, 0x03, reg_read_crc],
+            ),
             I2cTransaction::write_read(
                 addr,
                 vec![ANGLE_RESULT_MSB],
-                vec![angle_msb, angle_lsb, angle_crc],
+                vec![angle_msb, angle_lsb, 0x10, 0x20, angle_crc],
             ),
         ];
         let i2c = I2cMock::new(&expectations);
@@ -517,24 +460,25 @@ mod tests {
     #[test]
     fn crc8_mismatch_returns_error_on_corrupted_read() {
         let addr = 0x35;
-        let addr_w = addr << 1;
-        let addr_r = addr_w | 1;
 
-        let good_reg_crc = crate::crc::crc8(&[addr_w, DEVICE_STATUS, addr_r, 0x00]);
+        let good_reg_crc = crate::crc::crc8(&[0x00, 0x00, 0x00, 0x00]);
         let bad_reg_crc = good_reg_crc ^ 0xFF;
 
         let angle_msb = 0x0Bu8;
         let angle_lsb = 0x40u8;
-        let good_angle_crc =
-            crate::crc::crc8(&[addr_w, ANGLE_RESULT_MSB, addr_r, angle_msb, angle_lsb]);
+        let good_angle_crc = crate::crc::crc8(&[angle_msb, angle_lsb, 0x00, 0x00]);
         let bad_angle_crc = good_angle_crc ^ 0x01;
 
         let expectations = [
-            I2cTransaction::write_read(addr, vec![DEVICE_STATUS], vec![0x00, bad_reg_crc]),
+            I2cTransaction::write_read(
+                addr,
+                vec![DEVICE_STATUS],
+                vec![0x00, 0x00, 0x00, 0x00, bad_reg_crc],
+            ),
             I2cTransaction::write_read(
                 addr,
                 vec![ANGLE_RESULT_MSB],
-                vec![angle_msb, angle_lsb, bad_angle_crc],
+                vec![angle_msb, angle_lsb, 0x00, 0x00, bad_angle_crc],
             ),
         ];
         let i2c = I2cMock::new(&expectations);
@@ -563,23 +507,20 @@ mod tests {
     #[test]
     fn crc_enable_disable_transitions_match_silicon_state() {
         let addr = 0x35;
-        let addr_w = addr << 1;
-        let addr_r = addr_w | 1;
 
-        let read_dc1_with_crc = crate::crc::crc8(&[addr_w, DEVICE_CONFIG_1, addr_r, 0x8C]);
-        let write_dc1_disable_crc = crate::crc::crc8(&[addr_w, DEVICE_CONFIG_1, 0x0C]);
+        let read_dc1_with_crc = crate::crc::crc8(&[0x8C, 0x00, 0x00, 0x00]);
 
         let expectations = [
             // false -> true: read without CRC, write without CRC
             I2cTransaction::write_read(addr, vec![DEVICE_CONFIG_1], vec![0x0C]),
             I2cTransaction::write(addr, vec![DEVICE_CONFIG_1, 0x8C]),
-            // true -> false: read WITH CRC, write WITH CRC
+            // true -> false: read WITH CRC (4 data + 1 CRC), write without CRC
             I2cTransaction::write_read(
                 addr,
                 vec![DEVICE_CONFIG_1],
-                vec![0x8C, read_dc1_with_crc],
+                vec![0x8C, 0x00, 0x00, 0x00, read_dc1_with_crc],
             ),
-            I2cTransaction::write(addr, vec![DEVICE_CONFIG_1, 0x0C, write_dc1_disable_crc]),
+            I2cTransaction::write(addr, vec![DEVICE_CONFIG_1, 0x0C]),
             // Now CRC is disabled again: read without CRC
             I2cTransaction::write_read(addr, vec![DEVICE_CONFIG_1], vec![0x0C]),
         ];
