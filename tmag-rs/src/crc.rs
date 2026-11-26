@@ -3,9 +3,9 @@
 //! Implements CRC-8 calculation per TI TMAG5273 Datasheet Section 6.5.1.3.6
 //! using polynomial $x^8 + x^2 + x + 1$ (`0x07`) with initial value `0xFF`.
 
-/// Calculate CRC-8 over a slice of bytes using polynomial `0x07` and initial value `0xFF`.
-pub fn crc8(data: &[u8]) -> u8 {
-    let mut crc: u8 = 0xFF;
+/// Update a running CRC-8 state with additional bytes using polynomial `0x07`.
+#[inline]
+pub fn crc8_update(mut crc: u8, data: &[u8]) -> u8 {
     for &byte in data {
         crc ^= byte;
         for _ in 0..8 {
@@ -17,6 +17,12 @@ pub fn crc8(data: &[u8]) -> u8 {
         }
     }
     crc
+}
+
+/// Calculate CRC-8 over a slice of bytes using polynomial `0x07` and initial value `0xFF`.
+#[inline]
+pub fn crc8(data: &[u8]) -> u8 {
+    crc8_update(0xFF, data)
 }
 
 #[cfg(test)]
