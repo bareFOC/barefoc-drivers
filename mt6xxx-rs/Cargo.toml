@@ -12,7 +12,7 @@ embedded-hal = { workspace = true }
 embedded-hal-async = { workspace = true, optional = true }
 libm = { workspace = true }
 defmt = { workspace = true, optional = true }
-barefoc = { path = "../../bareFOC", default-features = false, optional = true }
+barefoc = { path = "../../barefoc-core", default-features = false, optional = true }
 
 [dev-dependencies]
 embedded-hal-mock = "0.10"
